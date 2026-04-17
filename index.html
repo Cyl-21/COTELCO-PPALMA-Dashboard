@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>COTELCO-PPALMA Energy Utilization & Demand Dashboard</title>
+<title>Energy Utilization & Demand Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -94,8 +94,8 @@
 
 <div class="header">
   <div class="header-left">
-    <div class="title">COTELCO-PPALMA Energy Utilization &amp; Demand Dashboard</div>
-    <div class="sub">COTELCO-PPALMA Supply Summary &nbsp;·&nbsp; Mar 26 – Apr 14, 2026 &nbsp;·&nbsp; PSALM · TSI · SMCPC</div>
+    <div class="title">Energy Utilization &amp; Demand Dashboard</div>
+    <div class="sub">Distribution Utility Supply Summary &nbsp;·&nbsp; Mar 26 – Apr 14, 2026 &nbsp;·&nbsp; PSALM · TSI · SMCPC</div>
   </div>
   <div class="header-right">
     <div class="h-badge">Total Supply: 9,539.5 MWh</div>
@@ -142,25 +142,25 @@
     <div class="kpi-grid" id="kpi-overview"></div>
     <div class="g3">
       <div class="card span2">
-        <div class="ct">Supply vs Demand — daily (MWh)</div>
-        <div class="cs">Side-by-side comparison per day · blue = Supply · red = Demand</div>
+        <div class="ct">Supply vs demand — daily (MWh)</div>
+        <div class="cs">Side-by-side comparison per day · blue = supply · red = demand</div>
         <div class="leg"><div class="li"><div class="lb" style="background:#1e4080"></div>Supply (MWh)</div><div class="li"><div class="lb" style="background:#e24b4a"></div>Demand (MWh)</div></div>
         <div style="position:relative;height:270px"><canvas id="ovChart"></canvas></div>
       </div>
       <div class="card">
-        <div class="ct">Supplier Energy Share</div>
+        <div class="ct">Supplier energy share</div>
         <div class="cs">% of total supply</div>
         <div style="position:relative;height:230px"><canvas id="ovPie"></canvas></div>
       </div>
     </div>
     <div class="g2">
       <div class="card">
-        <div class="ct">Daily Surplus / Deficit (MWh)</div>
-        <div class="cs">Green = Surplus · Red = Deficit</div>
+        <div class="ct">Daily surplus / deficit (MWh)</div>
+        <div class="cs">Green = surplus · Red = deficit</div>
         <div style="position:relative;height:200px"><canvas id="ovSD"></canvas></div>
       </div>
       <div class="card">
-        <div class="ct">Supply vs Demand Peak (MW)</div>
+        <div class="ct">Supply vs demand peak (MW)</div>
         <div class="cs">Highest 30-min interval value per day</div>
         <div class="leg"><div class="li"><div class="lb" style="background:#1e4080"></div>Supply peak</div><div class="li"><div class="lb" style="background:#e24b4a;border-radius:50%"></div>Demand peak</div></div>
         <div style="position:relative;height:200px"><canvas id="ovPeak"></canvas></div>
@@ -172,14 +172,14 @@
   <div id="tab-supply" class="panel">
     <div class="kpi-grid" id="kpi-supply"></div>
     <div class="g1"><div class="card">
-      <div class="ct">Daily Energy Supply by Supplier — stacked (MWh)</div>
+      <div class="ct">Daily energy supply by supplier — stacked (MWh)</div>
       <div class="cs">PSALM + TSI + SMCPC combined per day</div>
       <div class="leg"><div class="li"><div class="lb" style="background:#f97316"></div>PSALM</div><div class="li"><div class="lb" style="background:#f59e0b"></div>TSI</div><div class="li"><div class="lb" style="background:#eab308"></div>SMCPC</div></div>
       <div style="position:relative;height:300px"><canvas id="supStacked"></canvas></div>
     </div></div>
     <div class="g2">
       <div class="card">
-        <div class="ct">Supplier Daily Trend (MWh)</div>
+        <div class="ct">Supplier daily trend (MWh)</div>
         <div class="cs">Individual lines per supplier</div>
         <div class="leg"><div class="li"><div class="lb" style="background:#f97316"></div>PSALM</div><div class="li"><div class="lb" style="background:#f59e0b"></div>TSI</div><div class="li"><div class="lb" style="background:#eab308"></div>SMCPC</div></div>
         <div style="position:relative;height:220px"><canvas id="supLine"></canvas></div>
@@ -196,18 +196,18 @@
   <div id="tab-demand" class="panel">
     <div class="kpi-grid" id="kpi-demand"></div>
     <div class="g1"><div class="card">
-      <div class="ct">Daily Demand (MWh)</div>
-      <div class="cs">COTELCO-PPALMA Demand per day · red &gt; 520 MWh · amber &gt; 500 MWh</div>
+      <div class="ct">Daily demand (MWh)</div>
+      <div class="cs">Total distribution utility demand per day · red &gt; 520 MWh · amber &gt; 500 MWh</div>
       <div style="position:relative;height:280px"><canvas id="demBar"></canvas></div>
     </div></div>
     <div class="g2">
       <div class="card">
-        <div class="ct">Daily Peak Demand (MW)</div>
+        <div class="ct">Daily peak demand (MW)</div>
         <div class="cs">Highest 30-min interval per day · red ≥ 27 MW · amber ≥ 25 MW</div>
         <div style="position:relative;height:220px"><canvas id="demPeak"></canvas></div>
       </div>
       <div class="card">
-        <div class="ct">Demand Distribution (days per range)</div>
+        <div class="ct">Demand distribution (days per range)</div>
         <div class="cs">How many days fell in each MW range</div>
         <div style="position:relative;height:220px"><canvas id="demHist"></canvas></div>
       </div>
@@ -219,13 +219,13 @@
     <div class="kpi-grid" id="kpi-sd"></div>
     <div id="sd-alert"></div>
     <div class="g1"><div class="card">
-      <div class="ct">Daily Surplus / Deficit (MWh)</div>
+      <div class="ct">Daily surplus / deficit (MWh)</div>
       <div class="cs">Green bars = surplus (supply &gt; demand) · Red bars = deficit (demand &gt; supply)</div>
       <div style="position:relative;height:300px"><canvas id="sdBar"></canvas></div>
     </div></div>
     <div class="g2">
       <div class="card">
-        <div class="ct">Supply vs Demand — daily overlay</div>
+        <div class="ct">Supply vs demand — daily overlay</div>
         <div class="cs">Gap between lines = surplus or deficit</div>
         <div class="leg"><div class="li"><div class="lb" style="background:#1e4080"></div>Supply</div><div class="li"><div class="lb" style="background:#e24b4a"></div>Demand</div></div>
         <div style="position:relative;height:220px"><canvas id="sdOverlay"></canvas></div>
@@ -241,7 +241,7 @@
   <!-- LOAD PROFILE -->
   <div id="tab-profile" class="panel">
     <div class="g1"><div class="card">
-      <div class="ct">Average 30-min load profile — Supply vs Demand (MW)</div>
+      <div class="ct">Average 30-min load profile — supply vs demand (MW)</div>
       <div class="cs">Mean MW per interval across all days in range · INT 1 = 00:00–00:30 · INT 24 = 23:30–24:00</div>
       <div class="leg"><div class="li"><div class="lb" style="background:#1e4080"></div>Avg supply (MW)</div><div class="li"><div class="lb" style="background:#e24b4a"></div>Avg demand (MW)</div></div>
       <div style="position:relative;height:300px"><canvas id="profChart"></canvas></div>
@@ -264,7 +264,7 @@
   <div id="tab-suppliers" class="panel">
     <div class="sup-grid" id="sup-cards"></div>
     <div class="g1"><div class="card">
-      <div class="ct">Daily Energy by Supplier — side-by-side (MWh)</div>
+      <div class="ct">Daily energy by supplier — side-by-side (MWh)</div>
       <div class="cs">Grouped bar chart per supplier per day</div>
       <div class="leg"><div class="li"><div class="lb" style="background:#f97316"></div>PSALM — Power Sector Assets &amp; Liabilities Mgmt.</div><div class="li"><div class="lb" style="background:#f59e0b"></div>TSI — Therma South, Inc.</div><div class="li"><div class="lb" style="background:#eab308"></div>SMCPC — Malita Power Inc.</div></div>
       <div style="position:relative;height:300px"><canvas id="supComp"></canvas></div>
@@ -286,7 +286,7 @@
   </div>
 </div>
 
-<div class="footer">COTELCO-PPALMA Energy Utilization &amp; Demand Dashboard &nbsp;·&nbsp; Mar 26–Apr 14 2026 &nbsp;·&nbsp; PSALM · TSI (Therma South) · SMCPC (Malita Power)</div>
+<div class="footer">Energy Utilization &amp; Demand Dashboard &nbsp;·&nbsp; Mar 26–Apr 14 2026 &nbsp;·&nbsp; PSALM · TSI (Therma South) · SMCPC (Malita Power)</div>
 
 <script>
 const D={"dates":["2026-03-26","2026-03-27","2026-03-28","2026-03-29","2026-03-30","2026-03-31","2026-04-01","2026-04-02","2026-04-03","2026-04-04","2026-04-05","2026-04-06","2026-04-07","2026-04-08","2026-04-09","2026-04-10","2026-04-11","2026-04-12","2026-04-13","2026-04-14"],"supplyDaily":[273.3,490.3,468.4,465.2,502.3,510.0,510.6,466.6,455.9,471.2,454.0,494.9,502.9,506.9,486.9,493.8,482.1,491.0,501.4,511.8],"supplyPeak":[13.0,23.36,23.29,23.22,23.0,23.11,23.23,22.21,22.4,22.86,23.0,23.19,23.64,23.56,23.96,23.59,23.7,23.27,23.54,23.61],"demandDaily":[436.1,468.6,487.7,474.7,487.7,496.5,518.3,502.5,476.3,467.0,476.1,533.7,547.0,537.9,516.8,513.7,493.1,489.8,516.4,510.4],"demandPeak":[21.87,25.16,25.38,24.82,26.06,27.23,26.66,25.16,24.30,25.11,26.49,27.62,28.47,28.07,25.05,25.87,24.17,22.58,27.68,27.08],"sdDaily":[-162.8,21.7,-19.3,-9.5,14.6,13.5,-7.7,-35.9,-20.4,4.2,-22.1,-38.8,-44.1,-31.0,-29.9,-19.9,-11.0,1.2,-15.0,1.4],"avgSupProfile":[18.7,17.82,16.48,16.25,16.25,16.44,15.87,16.33,18.66,20.08,20.85,21.38,21.96,22.17,22.26,22.04,21.75,21.65,22.21,22.49,22.57,22.41,20.8,19.54],"avgDemProfile":[20.26,19.39,18.0,17.22,17.07,17.55,17.07,17.14,18.37,19.79,21.04,22.49,23.56,24.49,24.69,24.29,23.36,21.79,24.04,24.55,24.97,24.34,22.93,21.19],"suppliers":{"PSALM":{"daily":[183.8,195.8,196.3,193.6,192.1,193.0,193.1,191.9,179.7,171.2,176.8,192.2,193.6,194.3,195.6,196.9,196.5,194.7,194.3,194.1],"peak":[9.0,9.36,9.44,9.22,9.0,9.19,9.23,9.0,8.41,8.86,9.0,9.19,9.64,9.56,9.96,9.75,9.7,9.27,9.54,9.61]},"TSI":{"daily":[89.5,88.5,89.5,87.5,94.0,94.5,94.0,90.0,88.5,91.5,90.0,92.5,91.5,93.5,95.0,94.5,89.5,88.0,92.0,96.0],"peak":[4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0]},"SMCPC":{"daily":[210.0,206.0,182.6,184.2,216.2,222.4,223.4,184.7,187.7,208.4,187.2,210.2,217.9,219.1,196.3,202.4,196.0,208.3,215.1,221.6],"peak":[10.0,10.0,10.0,10.0,10.0,10.0,10.0,9.98,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0,10.0]}}};
@@ -302,8 +302,8 @@ function dn(d){return DAYS[new Date(d).getDay()];}
 let idx=D.dates.map((_,i)=>i);
 
 function gIdx(){const f=document.getElementById('fil-from').value,t=document.getElementById('fil-to').value;return D.dates.map((d,i)=>i).filter(i=>D.dates[i]>=f&&D.dates[i]<=t);}
-function applyFilters(){idx=gIdx();document.getElementById('fstat').textContent=`Showing ${idx.length} day${idx.length!==1?'s':''}`;rebuildAll();}
-function resetFilters(){document.getElementById('fil-from').value='2026-03-26';document.getElementById('fil-to').value='2026-04-14';applyFilters();}
+function applyFilters(){const minD=D.dates[0],maxD=D.dates[D.dates.length-1];const ff=document.getElementById('fil-from'),ft=document.getElementById('fil-to');ff.min=minD;ff.max=maxD;ft.min=minD;ft.max=maxD;if(ff.value<minD||ff.value>maxD)ff.value=minD;if(ft.value<minD||ft.value>maxD)ft.value=maxD;idx=gIdx();document.getElementById('fstat').textContent=`Showing ${idx.length} day${idx.length!==1?'s':''}`;rebuildAll();}
+function resetFilters(){const minD=D.dates[0],maxD=D.dates[D.dates.length-1];document.getElementById('fil-from').value=minD;document.getElementById('fil-to').value=maxD;applyFilters();}
 function fv(arr){return idx.map(i=>arr[i]);}
 function fl(){return idx.map(i=>fd(D.dates[i]));}
 function mk(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg);}
@@ -321,7 +321,7 @@ function buildOverview(){
     <div class="kpi amber"><div class="kl">Peak supply</div><div class="kv">${pS.toFixed(2)}<span class="ku"> MW</span></div><div class="ks">${pSd}</div></div>
     <div class="kpi purple"><div class="kl">Peak demand</div><div class="kv">${pD.toFixed(2)}<span class="ku"> MW</span></div><div class="ks">${pDd}</div></div>`;
   mk('ovChart',{type:'bar',data:{labels:lbl,datasets:[{label:'Supply',data:sup,backgroundColor:'rgba(30,64,128,0.75)'},{label:'Demand',data:dem,backgroundColor:'rgba(226,75,74,0.7)'}]},options:bo()});
-  mk('ovPie',{type:'doughnut',data:{labels:['PSALM','TSI','SMCPC'],datasets:[{data:['PSALM','TSI','SMCPC'].map(s=>fv(D.suppliers[s].daily).reduce((a,v)=>a+v,0).toFixed(0)),backgroundColor:['#14b8a6','#3b82f6','#eab308'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},color:'#555',padding:10,boxWidth:12}}}}});
+  mk('ovPie',{type:'doughnut',data:{labels:['PSALM','TSI','SMCPC'],datasets:[{data:['PSALM','TSI','SMCPC'].map(s=>fv(D.suppliers[s].daily).reduce((a,v)=>a+v,0).toFixed(0)),backgroundColor:['#f97316','#f59e0b','#eab308'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},color:'#555',padding:10,boxWidth:12}}}}});
   mk('ovSD',{type:'bar',data:{labels:lbl,datasets:[{data:sd,backgroundColor:sd.map(v=>v>=0?'rgba(29,158,117,0.8)':'rgba(226,75,74,0.75)')}]},options:bo({scales:{x:{grid:{color:GC},ticks:{color:'#777',font:{size:10},maxRotation:45}},y:{grid:{color:GC},ticks:{color:'#777',font:{size:11}},title:{display:true,text:'MWh',color:'#999',font:{size:11}}}}})});
   mk('ovPeak',{type:'line',data:{labels:lbl,datasets:[{label:'Supply peak',data:spk,borderColor:'#1e4080',borderWidth:2,pointRadius:3,tension:.3,fill:false},{label:'Demand peak',data:dpk,borderColor:'#e24b4a',borderWidth:2,pointRadius:3,tension:.3,fill:false,borderDash:[5,3]}]},options:{...bo(),plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},color:'#555',padding:8,boxWidth:10}}},scales:{x:{grid:{color:GC},ticks:{color:'#777',font:{size:10},maxRotation:45}},y:{grid:{color:GC},ticks:{color:'#777',font:{size:11}},title:{display:true,text:'MW',color:'#999',font:{size:11}}}}}});
 }
@@ -420,6 +420,8 @@ function showTab(name,btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');btn.classList.add('active');
 }
+function syncDateBounds(){const minD=D.dates[0],maxD=D.dates[D.dates.length-1];const ff=document.getElementById('fil-from'),ft=document.getElementById('fil-to');ff.min=minD;ff.max=maxD;ft.min=minD;ft.max=maxD;ff.value=minD;ft.value=maxD;}
+syncDateBounds();
 rebuildAll();
 
 
