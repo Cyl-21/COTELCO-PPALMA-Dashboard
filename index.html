@@ -455,171 +455,202 @@ function handleUpload(input) {
   const st = document.getElementById('upload-status');
   st.className = 'upload-progress';
   st.textContent = 'Reading file…';
+
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
       st.textContent = 'Parsing sheets…';
-      const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
 
-      // Required sheets
-      const need = ['Power Sector Assets & Liabiliti','Therma South, Inc. (TSI)','Malita Power Inc. (SMCPC)','Demand','Supply.Deficit'];
+      // ── Read workbook with cellDates so Date cells become JS Date objects ──
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+
+      // ── Validate required sheets ─────────────────────────────────────────
+      const need = [
+        'Power Sector Assets & Liabiliti',
+        'Therma South, Inc. (TSI)',
+        'Malita Power Inc. (SMCPC)',
+        'Demand',
+        'Supply.Deficit'
+      ];
       for (const n of need) {
-        if (!wb.SheetNames.includes(n)) throw new Error('Missing sheet: ' + n);
-      }
-
-      // Helper: parse a supplier sheet (row0=header with dates, rows1-24=INT1-24)
-      function parseSupSheet(sheetName) {
-        const ws = wb.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, dateNF:'yyyy-mm-dd'});
-        // row 0: ['Interval', date1, date2, ...]
-        const dateRow = rows[0].slice(1);
-        const dates = dateRow.map(d => {
-          if (!d) return null;
-          if (typeof d === 'string' && d.match(/^\d{4}-\d{2}-\d{2}/)) return d.slice(0,10);
-          const dt = new Date(d);
-          if (!isNaN(dt)) return dt.toISOString().slice(0,10);
-          return null;
-        }).filter(Boolean);
-        // data rows: 24 intervals
-        const data = []; // data[colIdx] = array of 24 interval values
-        for (let ci = 0; ci < dates.length; ci++) {
-          const col = [];
-          for (let ri = 1; ri <= 24; ri++) {
-            col.push(parseFloat(rows[ri] && rows[ri][ci+1]) || 0);
-          }
-          data.push(col);
+        if (!wb.SheetNames.includes(n)) {
+          throw new Error('Missing sheet: "' + n + '". Found: ' + wb.SheetNames.join(', '));
         }
-        return {dates, data};
       }
 
-      // Helper: parse Demand or Supply.Deficit sheet
-      // Row0=title, Row1=day names (no real dates), Row2-25=INT1-24
-      // Dates come from Summary_Index block1
-      function parseDemSD(sheetName, refDates) {
-        const ws = wb.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false});
-        // rows[2..25] = INT1..INT24, cols[1..N] = per day
-        const data = [];
-        const nCols = refDates.length;
-        for (let ci = 0; ci < nCols; ci++) {
-          const col = [];
-          for (let ri = 2; ri <= 25; ri++) {
-            col.push(parseFloat(rows[ri] && rows[ri][ci+1]) || 0);
-          }
-          data.push(col);
+      // ── Helper: convert any cell value to a YYYY-MM-DD string ────────────
+      // All sheets store dates as Excel Date cells (JS Date after cellDates:true)
+      // or occasionally as formatted strings.
+      function toDateStr(v) {
+        if (!v) return null;
+        if (v instanceof Date) {
+          // Guard against epoch-zero or clearly-wrong dates
+          if (v.getFullYear() < 2000) return null;
+          // Use UTC to avoid timezone shifting the date by a day
+          const y = v.getUTCFullYear();
+          const m = String(v.getUTCMonth() + 1).padStart(2, '0');
+          const d = String(v.getUTCDate()).padStart(2, '0');
+          return `${y}-${m}-${d}`;
         }
-        return data;
+        if (typeof v === 'string') {
+          const m = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+          if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+        }
+        return null;
       }
 
-      // Parse Summary_Index for dates (block 1: row2=dates, rows3-26=data)
-      function parseSummaryDates() {
-        const ws = wb.Sheets['Summary_Index'];
-        const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, dateNF:'yyyy-mm-dd'});
-        // Find first row that has a real date in col 1
+      // ── Helper: parse any sheet ───────────────────────────────────────────
+      //
+      // Two layouts exist in this workbook:
+      //
+      // Layout A — Supplier sheets (PSALM, TSI, SMCPC):
+      //   Row 0: 'Interval', date1, date2, …   ← dates here
+      //   Rows 1–24: 'INT 1'…'INT 24', val1, val2, …
+      //
+      // Layout B — Summary sheets (Demand, Supply.Deficit, Summary_Index):
+      //   Row 0: title text  (ignored)
+      //   Row 1: day names   (ignored)
+      //   Row 2: 'Interval', date1, date2, …   ← dates here
+      //   Rows 3–26: 'INT 1'…'INT 24', val1, val2, …
+      //
+      // We auto-detect which layout by scanning for the first row whose
+      // second cell is a valid date.
+      //
+      function parseSheet(sheetName) {
+        const ws = wb.Sheets[sheetName];
+        if (!ws) throw new Error('Sheet not found: ' + sheetName);
+
+        // raw:true keeps Date objects (cellDates was set on XLSX.read)
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true });
+
+        if (!rows || rows.length < 2) {
+          throw new Error('Sheet "' + sheetName + '" has too few rows (' + (rows ? rows.length : 0) + ')');
+        }
+
+        // Auto-detect the date header row: first row where col[1] is a valid date
         let dateRowIdx = -1;
-        for (let i = 0; i < rows.length; i++) {
-          const v = rows[i][1];
-          if (v && typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}/)) { dateRowIdx = i; break; }
-          if (v instanceof Date) { dateRowIdx = i; break; }
+        for (let ri = 0; ri < Math.min(rows.length, 5); ri++) {
+          if (rows[ri] && toDateStr(rows[ri][1])) { dateRowIdx = ri; break; }
         }
         if (dateRowIdx < 0) {
-          // fallback: row index 2
-          dateRowIdx = 2;
+          throw new Error('Sheet "' + sheetName + '": no date header row found in first 5 rows. ' +
+            'Row 0 col[1] = ' + JSON.stringify(rows[0] && rows[0][1]));
         }
-        const dateRow = rows[dateRowIdx].slice(1);
-        return dateRow.map(d => {
-          if (!d) return null;
-          if (typeof d === 'string' && d.match(/^\d{4}-\d{2}-\d{2}/)) return d.slice(0,10);
-          const dt = new Date(d);
-          return isNaN(dt) ? null : dt.toISOString().slice(0,10);
-        }).filter(d => d && !d.startsWith('1970'));
+
+        const dateRow = rows[dateRowIdx];
+        const dates = [];
+        const colMap = []; // maps date index → column index in the row
+        for (let ci = 1; ci < dateRow.length; ci++) {
+          const ds = toDateStr(dateRow[ci]);
+          if (ds) { dates.push(ds); colMap.push(ci); }
+        }
+
+        if (dates.length === 0) {
+          throw new Error('Sheet "' + sheetName + '": no valid dates found. First few values: ' +
+            JSON.stringify(dateRow.slice(0, 5)));
+        }
+
+        // Data rows immediately follow the date header row (24 intervals)
+        const dataStart = dateRowIdx + 1;
+        const dataEnd   = dataStart + 24; // exclusive
+
+        const data = dates.map((_, di) => {
+          const col = [];
+          for (let ri = dataStart; ri < dataEnd; ri++) {
+            const row = rows[ri];
+            const raw = row ? row[colMap[di]] : undefined;
+            col.push(typeof raw === 'number' ? raw : parseFloat(raw) || 0);
+          }
+          return col; // 24 interval values for this date
+        });
+
+        return { dates, data };
       }
 
       st.textContent = 'Processing data…';
 
-      const psalm = parseSupSheet('Power Sector Assets & Liabiliti');
-      const tsi   = parseSupSheet('Therma South, Inc. (TSI)');
-      const smcpc = parseSupSheet('Malita Power Inc. (SMCPC)');
-      const sumDates = parseSummaryDates();
-      const demData = parseDemSD('Demand', sumDates);
-      const sdData  = parseDemSD('Supply.Deficit', sumDates);
+      const psalm  = parseSheet('Power Sector Assets & Liabiliti');
+      const tsi    = parseSheet('Therma South, Inc. (TSI)');
+      const smcpc  = parseSheet('Malita Power Inc. (SMCPC)');
+      const demand = parseSheet('Demand');
+      const sdSheet= parseSheet('Supply.Deficit');
 
-      // Use psalm dates as the master date list (most reliable - has real dates)
-      const newDates = psalm.dates;
+      // ── Build date-keyed lookup maps ──────────────────────────────────────
+      function buildMap(parsed) {
+        const map = {};
+        parsed.dates.forEach((d, i) => { map[d] = parsed.data[i]; });
+        return map;
+      }
+      const psalMap = buildMap(psalm);
+      const tsiMap  = buildMap(tsi);
+      const smMap   = buildMap(smcpc);
+      const demMap  = buildMap(demand);
+      const sdMap   = buildMap(sdSheet);
 
-      // Find dates not already in D.dates
+      // Master date list = union of all supplier date lists
+      const allNewDates = [...new Set([...psalm.dates, ...tsi.dates, ...smcpc.dates])].sort();
+
+      // Only keep dates not already loaded
       const existing = new Set(D.dates);
-      const toAdd = newDates.filter(d => !existing.has(d));
+      const toAdd = allNewDates.filter(d => !existing.has(d));
 
       if (toAdd.length === 0) {
         st.className = 'upload-error';
         st.textContent = '⚠ No new dates found — already loaded.';
+        input.value = '';
         return;
       }
 
-      // Build lookup by date for each source
-      function buildLookup(src) {
-        const map = {};
-        src.dates.forEach((d, ci) => {
-          if (d) map[d] = src.data[ci];
-        });
-        return map;
-      }
-      const psalMap = buildLookup(psalm);
-      const tsiMap  = buildLookup(tsi);
-      const smMap   = buildLookup(smcpc);
-
-      // sumDates aligned to demData/sdData
-      const demMap = {}, sdMap = {};
-      sumDates.forEach((d, ci) => {
-        if (d) { demMap[d] = demData[ci]; sdMap[d] = sdData[ci]; }
-      });
-
+      // ── Append new data ───────────────────────────────────────────────────
       let added = 0;
       toAdd.forEach(date => {
-        const pCol = psalMap[date] || new Array(24).fill(0);
-        const tCol = tsiMap[date]  || new Array(24).fill(0);
-        const sCol = smMap[date]   || new Array(24).fill(0);
-        const dCol = demMap[date]  || new Array(24).fill(0);
-        const sdCol= sdMap[date]   || new Array(24).fill(0);
+        const pCol  = psalMap[date] || new Array(24).fill(0);
+        const tCol  = tsiMap[date]  || new Array(24).fill(0);
+        const sCol  = smMap[date]   || new Array(24).fill(0);
+        const dCol  = demMap[date]  || new Array(24).fill(0);
+        const sdCol = sdMap[date]   || new Array(24).fill(0);
 
-        const supSum = pCol.reduce((a,v)=>a+v,0) + tCol.reduce((a,v)=>a+v,0) + sCol.reduce((a,v)=>a+v,0);
-        // Supply peak = max across all 3 suppliers combined per interval
-        const supPk = Math.max(...pCol.map((v,i)=>v+tCol[i]+sCol[i]));
-        const demSum = dCol.reduce((a,v)=>a+v,0);
+        // Combined supply per interval
+        const supPerInt = pCol.map((v, i) => v + tCol[i] + sCol[i]);
+        const supSum = supPerInt.reduce((a, v) => a + v, 0);
+        const supPk  = Math.max(...supPerInt);
+        const demSum = dCol.reduce((a, v) => a + v, 0);
         const demPk  = Math.max(...dCol);
-        const sdSum  = sdCol.reduce((a,v)=>a+v,0);
+        const sdSum  = sdCol.reduce((a, v) => a + v, 0);
 
         D.dates.push(date);
-        D.supplyDaily.push(Math.round(supSum*10)/10);
-        D.supplyPeak.push(Math.round(supPk*100)/100);
-        D.demandDaily.push(Math.round(demSum*10)/10);
-        D.demandPeak.push(Math.round(demPk*100)/100);
-        D.sdDaily.push(Math.round(sdSum*10)/10);
-        D.suppliers.PSALM.daily.push(Math.round(pCol.reduce((a,v)=>a+v,0)*10)/10);
-        D.suppliers.PSALM.peak.push(Math.round(Math.max(...pCol)*100)/100);
-        D.suppliers.TSI.daily.push(Math.round(tCol.reduce((a,v)=>a+v,0)*10)/10);
-        D.suppliers.TSI.peak.push(Math.round(Math.max(...tCol)*100)/100);
-        D.suppliers.SMCPC.daily.push(Math.round(sCol.reduce((a,v)=>a+v,0)*10)/10);
-        D.suppliers.SMCPC.peak.push(Math.round(Math.max(...sCol)*100)/100);
+        D.supplyDaily.push(Math.round(supSum * 10) / 10);
+        D.supplyPeak.push(Math.round(supPk * 100) / 100);
+        D.demandDaily.push(Math.round(demSum * 10) / 10);
+        D.demandPeak.push(Math.round(demPk * 100) / 100);
+        D.sdDaily.push(Math.round(sdSum * 10) / 10);
 
-        // Recalculate avg profiles (running average)
+        D.suppliers.PSALM.daily.push(Math.round(pCol.reduce((a, v) => a + v, 0) * 10) / 10);
+        D.suppliers.PSALM.peak.push(Math.round(Math.max(...pCol) * 100) / 100);
+        D.suppliers.TSI.daily.push(Math.round(tCol.reduce((a, v) => a + v, 0) * 10) / 10);
+        D.suppliers.TSI.peak.push(Math.round(Math.max(...tCol) * 100) / 100);
+        D.suppliers.SMCPC.daily.push(Math.round(sCol.reduce((a, v) => a + v, 0) * 10) / 10);
+        D.suppliers.SMCPC.peak.push(Math.round(Math.max(...sCol) * 100) / 100);
+
+        // Update running-average interval profiles
         const n = D.dates.length;
-        for (let i=0; i<24; i++) {
-          const supI = pCol[i]+tCol[i]+sCol[i];
-          D.avgSupProfile[i] = Math.round(((D.avgSupProfile[i]*(n-1)+supI)/n)*100)/100;
-          D.avgDemProfile[i] = Math.round(((D.avgDemProfile[i]*(n-1)+dCol[i])/n)*100)/100;
+        for (let i = 0; i < 24; i++) {
+          D.avgSupProfile[i] = Math.round(((D.avgSupProfile[i] * (n - 1) + supPerInt[i]) / n) * 100) / 100;
+          D.avgDemProfile[i] = Math.round(((D.avgDemProfile[i] * (n - 1) + dCol[i]) / n) * 100) / 100;
         }
         added++;
       });
 
-      // Sort everything by date
-      const order = D.dates.map((d,i)=>i).sort((a,b)=>D.dates[a]<D.dates[b]?-1:1);
-      function reorder(arr) { return order.map(i=>arr[i]); }
-      D.dates = reorder(D.dates);
-      D.supplyDaily = reorder(D.supplyDaily); D.supplyPeak = reorder(D.supplyPeak);
-      D.demandDaily = reorder(D.demandDaily); D.demandPeak = reorder(D.demandPeak);
-      D.sdDaily = reorder(D.sdDaily);
+      // ── Sort all arrays by date ───────────────────────────────────────────
+      const order = D.dates.map((_, i) => i).sort((a, b) => D.dates[a] < D.dates[b] ? -1 : 1);
+      const reorder = arr => order.map(i => arr[i]);
+
+      D.dates         = reorder(D.dates);
+      D.supplyDaily   = reorder(D.supplyDaily);
+      D.supplyPeak    = reorder(D.supplyPeak);
+      D.demandDaily   = reorder(D.demandDaily);
+      D.demandPeak    = reorder(D.demandPeak);
+      D.sdDaily       = reorder(D.sdDaily);
       D.suppliers.PSALM.daily = reorder(D.suppliers.PSALM.daily);
       D.suppliers.PSALM.peak  = reorder(D.suppliers.PSALM.peak);
       D.suppliers.TSI.daily   = reorder(D.suppliers.TSI.daily);
@@ -627,25 +658,30 @@ function handleUpload(input) {
       D.suppliers.SMCPC.daily = reorder(D.suppliers.SMCPC.daily);
       D.suppliers.SMCPC.peak  = reorder(D.suppliers.SMCPC.peak);
 
-      // Update date filter bounds
-      const minD = D.dates[0], maxD = D.dates[D.dates.length-1];
-      ['fil-from','fil-to'].forEach(id => {
+      // ── Update UI ─────────────────────────────────────────────────────────
+      const minD = D.dates[0], maxD = D.dates[D.dates.length - 1];
+      ['fil-from', 'fil-to'].forEach(id => {
         const el = document.getElementById(id);
         el.min = minD; el.max = maxD;
       });
       document.getElementById('fil-from').value = minD;
-      document.getElementById('fil-to').value = maxD;
+      document.getElementById('fil-to').value   = maxD;
 
-      // Update header badge
-      document.querySelector('.h-badge').textContent = 'Total Supply: ' + D.supplyDaily.reduce((a,v)=>a+v,0).toFixed(1) + ' MWh';
+      const totalSup = D.supplyDaily.reduce((a, v) => a + v, 0);
+      const totalSD  = D.sdDaily.reduce((a, v) => a + v, 0);
+      const badges   = document.querySelectorAll('.h-badge');
+      badges[0].textContent = 'Total Supply: ' + totalSup.toFixed(1) + ' MWh';
+      badges[1].textContent = (totalSD >= 0 ? 'Net Surplus: +' : 'Net Deficit: −') + Math.abs(totalSD).toFixed(1) + ' MWh';
+      badges[1].className   = 'h-badge' + (totalSD < 0 ? ' warn' : '');
 
-      idx = D.dates.map((_,i)=>i);
+      idx = D.dates.map((_, i) => i);
       applyFilters();
 
       st.className = 'upload-success';
-      st.textContent = '✓ ' + added + ' new day' + (added!==1?'s':'') + ' added (' + D.dates.length + ' total)';
+      st.textContent = '✓ ' + added + ' new day' + (added !== 1 ? 's' : '') + ' added (' + D.dates.length + ' total)';
       input.value = '';
-    } catch(err) {
+
+    } catch (err) {
       const st = document.getElementById('upload-status');
       st.className = 'upload-error';
       st.textContent = '✗ Error: ' + err.message;
@@ -654,7 +690,6 @@ function handleUpload(input) {
   };
   reader.readAsArrayBuffer(file);
 }
-
 </script>
 </body>
 </html>
